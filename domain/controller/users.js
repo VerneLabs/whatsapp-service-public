@@ -19,6 +19,6 @@ module.exports = {
 
     async main(req, res) {
         if (SHOW_LOGS) console.log("Init Execution");
-        return res.json({ "message": "all done =D" })
+        return res.json({ "message": "all done" })
     }
 }
