@@ -184,25 +184,15 @@ async function createReservation(conversation_id, schedule_id, currentStep) {
     const agencies = await dalton.getAgencies(region_id);
     const agency_selected = agencies.find((agency) => (agency.id === Number(agency_id)))
     const date_selected = availabilities.find((date) => (date.id === Number(schedule_id)))
-
+    //todo not set time
+    //todo get better dates
     const hour = "9:00";
     if (!date_selected) return messageNotValid(conversation_id)
-    sunco.sendMessage(conversation_id, createContactContentText(`Ya quedo agendada tu cita en ${agency_selected.value} el dia ${date_selected.date} a las ${hour}`))
+    sunco.sendMessage(conversation_id, createContactContentText(`DEMO - Ya quedo agendada tu cita en ${agency_selected.value} el dia ${date_selected.date} a las ${hour}`))
 
-    // const dates = await dalton.getSchedule(agency_selected.id);
-
-    // let messageString = "";
-    // let counter = 0;
-    // const availabilities = []
-    // for (const date of dates) {
-    //     counter++;
-    //     messageString += `${counter}: ${date}\n`
-    //     availabilities.push({ id: counter, date: date })
-    // }
-    // sunco.sendMessage(conversation_id, createContactContentText(messageString))
-
-
-    addConversationToLocal(conversation_id, "step", "init")
+    setTimeout(() => {
+        mainMenu(conversation_id)
+    }, 1500);
 }
 
 
