@@ -25,7 +25,7 @@ module.exports = {
             });
             res.on("end", function (chunk) {
                 var body = Buffer.concat(chunks);
-                console.log(body.toString());
+                return body;
             });
             res.on("error", function (error) {
                 console.error(error);
@@ -40,5 +40,6 @@ module.exports = {
         });
         req.write(postData);
         req.end();
+        return req
     }
 }
