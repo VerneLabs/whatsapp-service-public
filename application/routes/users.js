@@ -6,12 +6,17 @@ const router = express.Router()
 
 let users = require('../../domain/controller/users');
 
+router.all('/', async (req, res) => {
+    users.main(req, res)
+})
 router.post('/', async (req, res) => {
     res.status(400).json({ message: "You need to add an id" })
 })
 //initTranscription
-
 router.get('/', (req, res) => {
+    users.main(req, res)
+});
+router.post('/', (req, res) => {
     users.main(req, res)
 });
 
