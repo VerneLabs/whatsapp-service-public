@@ -25,29 +25,25 @@ module.exports = {
         //todo: validate from where is the request
         console.log("req", JSON.stringify(req.body))
         const body = req.body;
-        const events = body.events;
-        console.log('events', events)
-        console.log('eventsL', events.length)
         const conversation_id = body.events[0].payload.conversation.id
         const author = body.events[0].payload.message.author.type
-
-        console.log("conversation id", conversation_id)
-        console.log("author type", author)
-        const contacts = addConversationToLocal(conversation_id)
         const messageType = body.events[0].payload.message.content.type;
+
         if (messageType !== "text") {
             console.log('message is not text', messageType)
             return res.json({ message: "right now text is the only type available" })
         }
-        const message = body.events[0].payload.message.content.text;
 
-        const content = {
-            "type": "text",
-            "text": `Hello Unai!!! escribiste ${message} y este es tu ${contacts} contacto`,
-            "tags": "demo"
+        if (author === "user") {
+            const contacts = addConversationToLocal(conversation_id)
+            const message = body.events[0].payload.message.content.text;
+            const content = {
+                "type": "text",
+                "text": `Hello Unai!!! escribiste ${message} y este es tu ${contacts} contacto`,
+                "tags": "demo"
+            }
+            sunco.sendMessage(conversation_id, content)
         }
-
-        if (author === "user") { sunco.sendMessage(conversation_id, content) }
         return res.json({ "message": "all done" })
     }
 }
