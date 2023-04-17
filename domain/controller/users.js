@@ -48,7 +48,7 @@ module.exports = {
                     break;
                 case "menu":
                     if (message == "1") getRegions(conversation_id)
-                    else if (message == "2") goToAgent()
+                    else if (message == "2") await goToAgent(conversation_id)
                     else messageNotValid(conversation_id)
                     break;
                 case "regions":
@@ -306,7 +306,10 @@ function messageNotValid(conversation_id) {
     
     Si deseas volver al inicio puedes escribir la palabra "Menú"`))
 }
-function goToAgent(conversation_id) {
-    //todo add switchboard action
-    sunco.sendMessage(conversation_id, createContactContentText(`Se reenviara con un agente`))
+async function goToAgent(conversation_id) {
+    console.log("si entre")
+    sunco.sendMessage(conversation_id, createContactContentText(`Se le reenviará con un agente`))
+    return setTimeout(() => {
+        sunco.passControl(conversation_id)
+    }, 2000);
 }
