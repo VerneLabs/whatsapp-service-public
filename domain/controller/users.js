@@ -4,6 +4,7 @@ let fs = require('fs');
 let time = require('./time');
 let sunco = require('../../infrastructure/sunco');
 let dalton = require('../../infrastructure/dalton');
+let utils = require('./utils');
 // let zendesk = require('../../infrastructure/zendesk');
 const { validationResult } = require('express-validator');
 const { parse } = require("csv-parse");
@@ -37,7 +38,7 @@ module.exports = {
         if (author === "business") return res.json({ "message": "business message" })
         if (author === "user") {
             const message = body.events[0].payload.message.content.text;
-            if (message === "menu") delete conversations[conversation_id]
+            if (message.toLowerCase().trim() === "menu" || message.toLowerCase().trim() === "menú") delete conversations[conversation_id]
 
             const contact = addConversationToLocal(conversation_id)
 
@@ -53,17 +54,38 @@ module.exports = {
                 case "regions":
                     //! in a future with whatsapp buttons check this if will be another values that are not numbers
                     if (isNaN(message)) messageNotValid(conversation_id)
-                    getAgency(conversation_id, message)
+                    getBrands(conversation_id, message)
+                    break;
+                case "brands":
+                    //! in a future with whatsapp buttons check this if will be another values that are not numbers
+                    if (isNaN(message)) messageNotValid(conversation_id)
+                    getAgency(conversation_id, message, contact)
                     break;
                 case "agencies":
                     //! in a future with whatsapp buttons check this if will be another values that are not numbers
+                    if (isNaN(message)) messageNotValid(conversation_id)
+                    getWeekDate(conversation_id, message, contact)
+                    break;
+                case "day":
+                    //! in a future with whatsapp buttons check this if will be another values that are not numbers
+                    if (isNaN(message)) messageNotValid(conversation_id)
+                    getSchedule(conversation_id, message, contact)
+                    break;
+                case "hour":
+                    //! in a future with whatsapp buttons check this if will be another values that are not numbers
+                    if (isNaN(message)) messageNotValid(conversation_id)
+                    // todo
+                    // getSchedule(conversation_id, message, contact)
+                    break;
+                case "confirm":
                     if (isNaN(message)) messageNotValid(conversation_id)
                     getSchedule(conversation_id, message, contact)
                     break;
                 case "schedule":
                     //! in a future with whatsapp buttons check this if will be another values that are not numbers
                     if (isNaN(message)) messageNotValid(conversation_id)
-                    createReservation(conversation_id, message, contact)
+                    // todo
+                    // createReservation(conversation_id, message, contact)
                     break;
 
                 default:
@@ -77,6 +99,10 @@ module.exports = {
 
         }
         return res.json({ "message": "all done" })
+    },
+    test(req, res) {
+
+        return res.json({ "message": "test" })
     }
 }
 
@@ -99,57 +125,113 @@ function createContactContentText(text) {
 
 
 async function mainMenu(conversation_id) {
-    sunco.sendMessage(conversation_id, createContactContentText(`Hola! bienvenido a la POC VernerLabs-Zendesk!`))
-    setTimeout(() => {
-        sunco.sendMessage(conversation_id, createContactContentText(
-            `¿Qué desea hacer el dia de hoy?
-           1. Agendar una cita
-           2. Hablar con un agente`
-        ))
-    }, 500);
+    sunco.sendMessage(conversation_id, createContactContentText(
+        `¡Hola! 👋🏽
+Bienvenido al Dalton 🤖 POC.
+Selecciona algunas de las siguientes opciones para saber como ayudarte 😉
+    
+1️⃣ Agendar una visita en sucursal 🗓️
+2️⃣ Hablar con un agente 🤓
+    `))
     addConversationToLocal(conversation_id, "step", "menu")
 }
-async function mainMenu(conversation_id) {
-    sunco.sendMessage(conversation_id, createContactContentText(`Hola! bienvenido a la POC VernerLabs-Zendesk!`))
-    setTimeout(() => {
-        sunco.sendMessage(conversation_id, createContactContentText(
-            `¿Qué desea hacer el dia de hoy?
-           1. Agendar una cita
-           2. Hablar con un agente`
-        ))
-    }, 500);
-    addConversationToLocal(conversation_id, "step", "menu")
-}
+
 async function getRegions(conversation_id) {
-    sunco.sendMessage(conversation_id, createContactContentText(`Perfecto! Selecciona a la región que perteneces`))
-    const regions = await dalton.getRegions();
-    let messageString = "";
-    const regionsSorted = regions.sort((p1, p2) => (p1.id >= p2.id) ? 1 : (p1.id <= p2.id) ? -1 : 0)
-    for (const region of regionsSorted) {
-        messageString += `${region.id}: ${region.value}\n`
-    }
-    sunco.sendMessage(conversation_id, createContactContentText(messageString))
-    addConversationToLocal(conversation_id, "step", "regions")
+    sunco.sendMessage(conversation_id, createContactContentText(`¡Super! 🫡
+Para ayudarte a agendar tu visita a sucursal, por favor, contesta las siguientes preguntas.`))
+    setTimeout(async () => {
+        const regions = await dalton.getRegions();
+        let messageString = "Selecciona la ciudad donde deseas realizar tu cita. \n\n";
+        const regionsSorted = regions.sort((p1, p2) => (p1.id >= p2.id) ? 1 : (p1.id <= p2.id) ? -1 : 0)
+        for (const region of regionsSorted) {
+            messageString += `${utils.numberIcon(region.id)} ${region.value}\n`
+        }
+        sunco.sendMessage(conversation_id, createContactContentText(messageString))
+        addConversationToLocal(conversation_id, "step", "regions")
+    }, 500);
 }
-async function getAgency(conversation_id, option) {
+
+async function getBrands(conversation_id, option) {
+
     const regions = await dalton.getRegions();
     const option_selected = regions.find((region) => (region.id === Number(option)))
     if (!option_selected) return messageNotValid(conversation_id)
-    sunco.sendMessage(conversation_id, createContactContentText(`Voy a buscar las agencias disponibles en ${option_selected.value}`))
+    sunco.sendMessage(conversation_id, createContactContentText(`Cuéntanos ¿de cuál de las siguientes marcas, es tu automóvil? 😎`))
 
     const agencies = await dalton.getAgencies(option_selected.id);
-    const agenciesSorted = agencies.sort((p1, p2) => (p1.id >= p2.id) ? 1 : (p1.id <= p2.id) ? -1 : 0)
+
+    const [cars, agenciesFilteredData] = utils.carsData(agencies)
+    // const agenciesSorted = agencies.sort((p1, p2) => (p1.id >= p2.id) ? 1 : (p1.id <= p2.id) ? -1 : 0)
 
     let messageString = "";
-    for (const agency of agenciesSorted) {
-        messageString += `${agency.id}: ${agency.value}\n`
+    let carsBrandAndId = []
+    let counter = 1;
+    for (const car of cars) {
+        messageString += `${utils.numberIcon(counter)} ${car}\n`
+        carsBrandAndId.push({ id: counter, name: car })
+        counter++;
     }
+
     sunco.sendMessage(conversation_id, createContactContentText(messageString))
-    addConversationToLocal(conversation_id, "step", "agencies")
+    addConversationToLocal(conversation_id, "cars", carsBrandAndId)
+    addConversationToLocal(conversation_id, "agenciesData", agenciesFilteredData)
+    addConversationToLocal(conversation_id, "step", "brands")
     addConversationToLocal(conversation_id, "region", option)
 }
+async function getAgency(conversation_id, option, conversation) {
+    const option_selected = conversation.cars.find(car => car.id == option)
 
+    if (!option_selected) return messageNotValid(conversation_id)
+    const validAgencies = conversation.agenciesData.filter((agency) => agency.brand == option_selected.name)
+    let messageString = `¡Que gran elección! 🚙
+
+Selecciona la sucursal que más que te convenga 
+
+`;
+    let agencyAndId = []
+    let counter = 1;
+    for (const agency of validAgencies) {
+        messageString += `${utils.numberIcon(counter)} ${agency.name}\n`
+        agencyAndId.push({ id: counter, name: agency.name, externalId: agency.id })
+        counter++;
+    }
+    sunco.sendMessage(conversation_id, createContactContentText(messageString))
+
+    const agenciesData = [...conversation.agenciesData];
+
+    for (const agency of agenciesData) {
+        const findValue = agencyAndId.find((temp) => temp.externalId === agency.id);
+        console.log(findValue)
+        if (findValue) agency.externalId = findValue.id
+    }
+
+    addConversationToLocal(conversation_id, "step", "agencies")
+    // addConversationToLocal(conversation_id, "region", option)
+    addConversationToLocal(conversation_id, "agenciesData", agenciesData)
+
+}
+
+async function getWeekDate(conversation_id, agency_id, currentStep) {
+    const agencies = currentStep.agenciesData;
+    const agency_selected = agencies.find((agency) => (Number(agency.externalId) === Number(agency_id)))
+    if (!agency_selected) return messageNotValid(conversation_id)
+    let messageString = `Ayúdanos eligiendo el día que prefieras para tu visita 
+
+1️⃣ Lunes
+2️⃣ Martes
+3️⃣ Miércoles
+4️⃣ Jueves
+5️⃣ Viernes
+6️⃣ Sábado`;
+    sunco.sendMessage(conversation_id, createContactContentText(messageString))
+    addConversationToLocal(conversation_id, "step", "day")
+    addConversationToLocal(conversation_id, "agency", agency_selected.id)
+}
 async function getSchedule(conversation_id, agency_id, currentStep) {
+
+    console.log('currentStep', currentStep)
+
+
     const region_id = currentStep.region;
     const agencies = await dalton.getAgencies(region_id);
     const agency_selected = agencies.find((agency) => (agency.id === Number(agency_id)))
@@ -198,7 +280,9 @@ async function createReservation(conversation_id, schedule_id, currentStep) {
 
 
 function messageNotValid(conversation_id) {
-    sunco.sendMessage(conversation_id, createContactContentText(`Opción no valida, por favor intenta de nuevo`))
+    sunco.sendMessage(conversation_id, createContactContentText(`Opción no valida, por favor intenta de nuevo
+    
+    Si deseas volver al inicio puedes escribir la palabra "Menú"`))
 }
 function goToAgent(conversation_id) {
     //todo add switchboard action
