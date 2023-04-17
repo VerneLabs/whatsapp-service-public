@@ -35,6 +35,7 @@ module.exports = {
         if (messageType !== "text") {
             return res.json({ message: "right now text is the only type available" })
         }
+        if (body.events[0].payload.conversation.activeSwitchboardIntegration.name !== "bot") return res.json({ "message": "bot not active" })
         if (author === "business") return res.json({ "message": "business message" })
         if (author === "user") {
             const message = body.events[0].payload.message.content.text;
