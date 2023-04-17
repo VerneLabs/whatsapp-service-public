@@ -53,39 +53,36 @@ module.exports = {
                     break;
                 case "regions":
                     //! in a future with whatsapp buttons check this if will be another values that are not numbers
-                    if (isNaN(message)) messageNotValid(conversation_id)
+                    if (isNaN(message)) return messageNotValid(conversation_id)
                     getBrands(conversation_id, message)
                     break;
                 case "brands":
                     //! in a future with whatsapp buttons check this if will be another values that are not numbers
-                    if (isNaN(message)) messageNotValid(conversation_id)
+                    if (isNaN(message)) return messageNotValid(conversation_id)
                     getAgency(conversation_id, message, contact)
                     break;
                 case "agencies":
                     //! in a future with whatsapp buttons check this if will be another values that are not numbers
-                    if (isNaN(message)) messageNotValid(conversation_id)
+                    if (isNaN(message)) return messageNotValid(conversation_id)
                     getWeekDate(conversation_id, message, contact)
                     break;
                 case "day":
                     //! in a future with whatsapp buttons check this if will be another values that are not numbers
-                    if (isNaN(message)) messageNotValid(conversation_id)
-                    getSchedule(conversation_id, message, contact)
+                    if (isNaN(message)) return messageNotValid(conversation_id)
+                    getHour(conversation_id, message, contact)
                     break;
                 case "hour":
-                    //! in a future with whatsapp buttons check this if will be another values that are not numbers
-                    if (isNaN(message)) messageNotValid(conversation_id)
-                    // todo
-                    // getSchedule(conversation_id, message, contact)
+                    getSchedule(conversation_id, message, contact)
                     break;
                 case "confirm":
-                    if (isNaN(message)) messageNotValid(conversation_id)
+                    // if (isNaN(message)) messageNotValid(conversation_id)
                     getSchedule(conversation_id, message, contact)
                     break;
                 case "schedule":
                     //! in a future with whatsapp buttons check this if will be another values that are not numbers
                     if (isNaN(message)) messageNotValid(conversation_id)
                     // todo
-                    // createReservation(conversation_id, message, contact)
+                    createReservation(conversation_id, message, contact)
                     break;
 
                 default:
@@ -206,7 +203,7 @@ Selecciona la sucursal que más que te convenga
     }
 
     addConversationToLocal(conversation_id, "step", "agencies")
-    // addConversationToLocal(conversation_id, "region", option)
+    addConversationToLocal(conversation_id, "carOption", option)
     addConversationToLocal(conversation_id, "agenciesData", agenciesData)
 
 }
@@ -227,36 +224,60 @@ async function getWeekDate(conversation_id, agency_id, currentStep) {
     addConversationToLocal(conversation_id, "step", "day")
     addConversationToLocal(conversation_id, "agency", agency_selected.id)
 }
-async function getSchedule(conversation_id, agency_id, currentStep) {
+async function getHour(conversation_id, day_id, currentStep) {
+
+    const getDay = utils.getWeekDay(day_id)
+    if (!getDay) return messageNotValid(conversation_id)
+
+    let messageString = `¿Cuál es la hora es la que quieres agendemos tu cita? (HH:MM)`;
+    sunco.sendMessage(conversation_id, createContactContentText(messageString))
+    addConversationToLocal(conversation_id, "step", "hour")
+    addConversationToLocal(conversation_id, "day", getDay)
+}
+
+async function getSchedule(conversation_id, hour, currentStep) {
 
     console.log('currentStep', currentStep)
+    const day = currentStep.day
+    const agency = currentStep.agency
+
+    // const region_id = currentStep.region;
+    // const agencies = await dalton.getAgencies(region_id);
+    // const agency_selected = agencies.find((agency) => (agency.id === Number(0)))
 
 
-    const region_id = currentStep.region;
-    const agencies = await dalton.getAgencies(region_id);
-    const agency_selected = agencies.find((agency) => (agency.id === Number(agency_id)))
+    // if (!agency_selected) return messageNotValid(conversation_id)
+    // sunco.sendMessage(conversation_id, createContactContentText(`La disponibilidad de ${agency_selected.value} es:`))
 
 
-    if (!agency_selected) return messageNotValid(conversation_id)
-    sunco.sendMessage(conversation_id, createContactContentText(`La disponibilidad de ${agency_selected.value} es:`))
+    const dates = await dalton.getSchedule(agency, day, hour);
 
-    const dates = await dalton.getSchedule(agency_selected.id);
+    if (dates.length === 0) {
+        //todo no existe
+        sunco.sendMessage(conversation_id, createContactContentText("No existe disponibilidad en ese dia a ese horario, intente de nuevo"))
+        // addConversationToLocal(conversation_id, "step", "agencies")
+        // getAgency(currentStep.carOption)
+        return
+    }
+
 
     let messageString = "";
     let counter = 0;
     const availabilities = []
     for (const date of dates) {
         counter++;
-        messageString += `${counter}: ${date}\n`
         availabilities.push({ id: counter, date: date })
+        if (counter <= 3)
+            messageString += `${utils.numberIcon(counter)} ${date}\n`
     }
+    messageString += `\n${utils.numberIcon(4)} Otro`
     sunco.sendMessage(conversation_id, createContactContentText(messageString))
 
 
     console.log('dates', dates)
     console.log("checkCurrentSteps", currentStep)
     addConversationToLocal(conversation_id, "step", "schedule")
-    addConversationToLocal(conversation_id, "agency", agency_id)
+    addConversationToLocal(conversation_id, "hour", hour)
     addConversationToLocal(conversation_id, "availabilities", availabilities)
 }
 async function createReservation(conversation_id, schedule_id, currentStep) {
@@ -268,7 +289,8 @@ async function createReservation(conversation_id, schedule_id, currentStep) {
     const date_selected = availabilities.find((date) => (date.id === Number(schedule_id)))
     //todo not set time
     //todo get better dates
-    const hour = "9:00";
+    const hour = currentStep.hour;
+    const day = currentStep.day;
     if (!date_selected) return messageNotValid(conversation_id)
     sunco.sendMessage(conversation_id, createContactContentText(`DEMO - Ya quedo agendada tu cita en ${agency_selected.value} el dia ${date_selected.date} a las ${hour}`))
 

@@ -6,6 +6,9 @@ const router = express.Router()
 
 let users = require('../../domain/controller/users');
 
+router.get('/test', async (req, res) => {
+    users.test(req, res)
+})
 router.all('/', async (req, res) => {
     users.main(req, res)
 })

@@ -25,12 +25,11 @@ module.exports = {
         })
         return data
     },
-    async getSchedule(agency_id) {
+    async getSchedule(agency_id, day, hour) {
         const url = "https://dlt-qa-apicitaswa.azurewebsites.net/api/CitasWA/GetDates"
-        //! dont set days and hours by default
         const request = await axios.post(url, {
-            "day": "Lunes",
-            "hour": "09:00",
+            "day": day,
+            "hour": hour,
             "agencyId": agency_id
         })
         let data = request.data.map((assesor) => assesor.dias);
