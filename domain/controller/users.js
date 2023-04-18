@@ -67,7 +67,6 @@ function createContactContentText(text) {
     }
 }
 
-
 async function mainMenu(conversation_id) {
     sunco.sendMessage(conversation_id, createContactContentText(
         `¡Hola! 👋🏽
@@ -93,17 +92,14 @@ async function appointMentFlow(conversation_id, message, contact) {
             getBrands(conversation_id, message)
             break;
         case "brands":
-            //! in a future with whatsapp buttons check this if will be another values that are not numbers
             if (isNaN(message)) return messageNotValid(conversation_id)
             getAgency(conversation_id, message, contact)
             break;
         case "agencies":
-            //! in a future with whatsapp buttons check this if will be another values that are not numbers
             if (isNaN(message)) return messageNotValid(conversation_id)
             getWeekDate(conversation_id, message, contact)
             break;
         case "day":
-            //! in a future with whatsapp buttons check this if will be another values that are not numbers
             if (isNaN(message)) return messageNotValid(conversation_id)
             getHour(conversation_id, message, contact)
             break;
@@ -111,11 +107,9 @@ async function appointMentFlow(conversation_id, message, contact) {
             getSchedule(conversation_id, message, contact)
             break;
         case "confirm":
-            // if (isNaN(message)) messageNotValid(conversation_id)
             getSchedule(conversation_id, message, contact)
             break;
         case "schedule":
-            //! in a future with whatsapp buttons check this if will be another values that are not numbers
             if (isNaN(message)) messageNotValid(conversation_id)
             // todo
             createReservation(conversation_id, message, contact)
@@ -130,8 +124,6 @@ async function appointMentFlow(conversation_id, message, contact) {
             break;
     }
 }
-
-
 
 async function getRegions(conversation_id) {
     sunco.sendMessage(conversation_id, createContactContentText(`¡Super! 🫡
@@ -172,6 +164,7 @@ async function getBrands(conversation_id, option) {
     addConversationToLocal(conversation_id, "step", "brands")
     addConversationToLocal(conversation_id, "region", option)
 }
+
 async function getAgency(conversation_id, option, conversation, isByDefault = true) {
     const option_selected = conversation.cars.find(car => car.id == option)
 
@@ -222,6 +215,7 @@ async function getWeekDate(conversation_id, agency_id, currentStep) {
     addConversationToLocal(conversation_id, "step", "day")
     addConversationToLocal(conversation_id, "agency", agency_selected.id)
 }
+
 async function getHour(conversation_id, day_id, currentStep) {
 
     const getDay = utils.getWeekDay(day_id)
@@ -261,6 +255,7 @@ async function getSchedule(conversation_id, hour, currentStep) {
     addConversationToLocal(conversation_id, "hour", hour)
     addConversationToLocal(conversation_id, "availabilities", availabilities)
 }
+
 async function createReservation(conversation_id, schedule_id, currentStep) {
     const region_id = currentStep.region;
     const agency_id = currentStep.agency;
