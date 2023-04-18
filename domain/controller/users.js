@@ -1,33 +1,14 @@
-require('dotenv').config()
-let fs = require('fs');
-
-let time = require('./time');
 let sunco = require('../../infrastructure/sunco');
 let dalton = require('../../infrastructure/dalton');
 let utils = require('./utils');
-// let zendesk = require('../../infrastructure/zendesk');
-const { validationResult } = require('express-validator');
-const { parse } = require("csv-parse");
-const { config } = require('dotenv');
-const { options } = require('pdfkit');
-
-const SHOW_LOGS = (!process.env.SHOW_LOGS || process.env.SHOW_LOGS == 0 || process.env.SHOW_LOGS.trim().toLowerCase() == "false" || process.env.SHOW_LOGS == null || process.env.SHOW_LOGS == undefined) ? false : true
 let conversations = [];
-let usersMemory = [];
-let usersNotCreated = [];
-const validateExternalIdExist = true;
-const attachmentTempFolder = "./domain/buffer/tempAttachments"
-const VALIDATE_ONLY_NOT_CREATED = true;
+
 
 
 module.exports = {
 
     async main(req, res) {
-        if (SHOW_LOGS) console.log("Init Execution");
-
-        //todo: validate from where is the request
         //todo: reset conversations
-        console.log("req", JSON.stringify(req.body))
         const body = req.body;
         const conversation_id = body.events[0].payload.conversation.id
         const author = body.events[0].payload.message.author.type
@@ -56,7 +37,7 @@ module.exports = {
                     appointMentFlow(conversation_id, message, contact)
                     break;
                 default:
-                    console.log("paso", contact.step)
+                    console.log("category", contact.category)
                     sunco.sendMessage(conversation_id, createContactContentText(`No consegui en que paso del proceso vamos, te enviaré al menu para evitar errores`))
                     setTimeout(() => {
                         mainMenu()
@@ -65,7 +46,7 @@ module.exports = {
             }
 
         }
-        return res.json({ "message": "all done" })
+        return res.json({ "message": "ok" })
     },
 }
 
@@ -216,7 +197,6 @@ Selecciona la sucursal que más que te convenga
 
     for (const agency of agenciesData) {
         const findValue = agencyAndId.find((temp) => temp.externalId === agency.id);
-        console.log(findValue)
         if (findValue) agency.externalId = findValue.id
     }
 
@@ -255,23 +235,11 @@ async function getHour(conversation_id, day_id, currentStep) {
 
 async function getSchedule(conversation_id, hour, currentStep) {
 
-    console.log('currentStep', currentStep)
     const day = currentStep.day
     const agency = currentStep.agency
-
-    // const region_id = currentStep.region;
-    // const agencies = await dalton.getAgencies(region_id);
-    // const agency_selected = agencies.find((agency) => (agency.id === Number(0)))
-
-
-    // if (!agency_selected) return messageNotValid(conversation_id)
-    // sunco.sendMessage(conversation_id, createContactContentText(`La disponibilidad de ${agency_selected.value} es:`))
-
-
     const dates = await dalton.getSchedule(agency, day, hour);
 
     if (dates.length === 0) {
-        //todo no existe
         sunco.sendMessage(conversation_id, createContactContentText("No existe disponibilidad en ese dia a ese horario, intente de nuevo"))
         return setTimeout(() => {
             getAgency(conversation_id, currentStep.carOption, currentStep, false)
@@ -289,10 +257,6 @@ async function getSchedule(conversation_id, hour, currentStep) {
     }
     messageString += `\n${utils.numberIcon(4)} Otro`
     sunco.sendMessage(conversation_id, createContactContentText(messageString))
-
-
-    console.log('dates', dates)
-    console.log("checkCurrentSteps", currentStep)
     addConversationToLocal(conversation_id, "step", "schedule")
     addConversationToLocal(conversation_id, "hour", hour)
     addConversationToLocal(conversation_id, "availabilities", availabilities)
@@ -324,7 +288,6 @@ function messageNotValid(conversation_id) {
     Si deseas volver al inicio puedes escribir la palabra "Menú"`))
 }
 async function goToAgent(conversation_id) {
-    console.log("si entre")
     sunco.sendMessage(conversation_id, createContactContentText(`Se le reenviará con un agente`))
     return setTimeout(() => {
         sunco.passControl(conversation_id)
