@@ -176,14 +176,16 @@ async function getBrands(conversation_id, option) {
     addConversationToLocal(conversation_id, "step", "brands")
     addConversationToLocal(conversation_id, "region", option)
 }
-async function getAgency(conversation_id, option, conversation) {
+async function getAgency(conversation_id, option, conversation, isByDefault = true) {
     const option_selected = conversation.cars.find(car => car.id == option)
 
     if (!option_selected) return messageNotValid(conversation_id)
     const validAgencies = conversation.agenciesData.filter((agency) => agency.brand == option_selected.name)
-    let messageString = `¡Que gran elección! 🚙
+    let messageString = isByDefault ? `¡Que gran elección! 🚙
 
 Selecciona la sucursal que más que te convenga 
+
+`: `Selecciona la sucursal que más que te convenga 
 
 `;
     let agencyAndId = []
@@ -256,11 +258,10 @@ async function getSchedule(conversation_id, hour, currentStep) {
     if (dates.length === 0) {
         //todo no existe
         sunco.sendMessage(conversation_id, createContactContentText("No existe disponibilidad en ese dia a ese horario, intente de nuevo"))
-        // addConversationToLocal(conversation_id, "step", "agencies")
-        // getAgency(currentStep.carOption)
-        return
+        return setTimeout(() => {
+            getAgency(conversation_id, currentStep.carOption, currentStep, false)
+        }, 1500);
     }
-
 
     let messageString = "";
     let counter = 0;
